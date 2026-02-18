@@ -7,5 +7,8 @@ __pycache__/
 # Ambiente de desenvolvimento
 .venv/
 
+# Ambiente de desenvolvimento
+.vscode/
+
 # Registros
 logs/

@@ -33,7 +33,7 @@ def normalizar_pdf_bytes(valor):
             return None
     return None
 
-def emitir_documento(
+def emitir_documento_service(
         tipo_documento: int,
         id_entidade: int
 ):
@@ -73,3 +73,7 @@ def emitir_documento(
         "raw": data,
         "pdf_bytes": pdf_bytes,
     }
+
+if __name__ == "__main__":
+    r = emitir_documento_service(4, 600446)
+    print(r)

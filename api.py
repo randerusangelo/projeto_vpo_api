@@ -11,12 +11,9 @@ from obter_custo_rota import obter_custo_rota
 from comprar_pegadio_avulso import comprar_pedagio_avulso
 from cancelar_compra_vale_pedagio import cancelar_compra_vale_pedagio
 from confirmar_pedagio_tag import confirmar_pedagio_tag
-from emitir_documento import emitir_documento
+from emitir_documento import emitir_documento_service as emitir_documento_svc
 
-import inspect
 
-print("emitir_documento veio de:", inspect.getfile(emitir_documento))
-print("assinatura emitir_documento:", inspect.signature(emitir_documento))
 
 
 load_dotenv()
@@ -227,7 +224,7 @@ def emitir_documento():
         return jsonify({"error": "Campo obrigatórios: tipo_documento, id_entidade"}), 400
 
     try: 
-        res = emitir_documento(int(tipo_documento), int(id_entidade))
+        res = emitir_documento_svc(int(tipo_documento), int(id_entidade))
 
         if not res["ok"]:
             return jsonify({
