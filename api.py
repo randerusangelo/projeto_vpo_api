@@ -1,24 +1,45 @@
-from flask import Flask, request, jsonify, send_file
-from dotenv import load_dotenv
+#Libs default
 import os
 import io
 import base64
 
+#Configuração de conexão web
+from flask_caching import Cache
+from flask import Flask, request, jsonify, send_file
+from dotenv import load_dotenv
+
 #Implementacao dos metodos da api da TargetBank
-from buscar_roteiro import buscar_roteiro_service
-from consultar_situacao_veiculo_tag import consultar_tags_disponiveis
-from obter_custo_rota import obter_custo_rota
-from comprar_pegadio_avulso import comprar_pedagio_avulso
-from cancelar_compra_vale_pedagio import cancelar_compra_vale_pedagio
-from confirmar_pedagio_tag import confirmar_pedagio_tag
-from emitir_documento import emitir_documento_service as emitir_documento_svc
-
-
+from src.services.buscar_roteiro import buscar_roteiro_service
+from src.services.consultar_situacao_veiculo_tag import consultar_tags_disponiveis
+from src.services.obter_custo_rota import obter_custo_rota
+from src.services.comprar_pegadio_avulso import comprar_pedagio_avulso
+from src.services.cancelar_compra_vale_pedagio import cancelar_compra_vale_pedagio
+from src.services.confirmar_pedagio_tag import confirmar_pedagio_tag
+from src.services.emitir_documento import emitir_documento_service as emitir_documento_svc
 
 
 load_dotenv()
 
-app = Flask (__name__)
+cache = Cache()
+
+#app = Flask (__name__)
+
+def create_app():
+    app = Flask (__name__)
+    app.config["CACHE_TYPE"] = "RedisCache"
+    app.config["CACHE_REDIS_HOST"] = os.getenv("REDIS_HOST", "localhost")
+    app.config["CACHE_REDIS_PORT"] = int(os.getenv("REDIS_PORT", "6379"))
+    app.config["CACHE_REDIS_DB"]   = int(os.getenv("REDIS_DB", "0"))
+    #app.config["CACHE_REDIS_PASSWORD"] = os.getenv("REDIS_PASSWORD")
+    app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+
+    cache.init_app(app)
+
+    return app
+
+app = create_app()
+
+
 
 HOST = os.getenv("HOST")
 PORT = os.getenv("PORT")
@@ -55,6 +76,7 @@ def buscarroteiro():
 
 #ROTA PARA VER AS TAGS DISPONIVEIS
 @app.get("/tagdisponiveis")
+@cache.cached(timeout=300, query_string=True)
 def tagdisponiveis():
     placa = request.args.get("placa", "").strip()
 
@@ -74,6 +96,7 @@ def tagdisponiveis():
 
 #ROTA PARA OBTER CUSTO     
 @app.get("/custorota")
+@cache.cached(timeout=300, query_string=True)
 def custorota():
     categoria = request.args.get("categoria")
     rota = request.args.get("rota")
