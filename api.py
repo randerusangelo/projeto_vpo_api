@@ -2,11 +2,13 @@
 import os
 import io
 import base64
+import logging
 
 #Configuração de conexão web
 from flask_caching import Cache
 from flask import Flask, request, jsonify, send_file
 from dotenv import load_dotenv
+from logging.handlers import RotatingFileHandler
 
 #Implementacao dos metodos da api da TargetBank
 from src.services.buscar_roteiro import buscar_roteiro_service
@@ -290,10 +292,54 @@ def emitir_documento():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def _is_debug() -> bool:
+    return str(os.getenv("DEBUG", "0")).lower() in ("1", "true", "yes", "on")
+
+def _configure_logging(app: Flask):
+    debug_flag = _is_debug()
+    if debug_flag:
+        app.logger.setLevel(logging.DEBUG)
+        return
+    
+    os.makedirs("logs", exist_ok=True)
+    handler = RotatingFileHandler(
+        "logs/api.log",
+        maxBytes=1_000_000,
+        backupCount=3,
+        encoding="utf-8"
+    )
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+    handler.setLevel(logging.INFO)
+
+    if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
+        app.logger.addHandler(handler)
+    app.logger.setLevel(logging.INFO)
 
 if __name__ == "__main__":
-    app.run(
-        host=HOST,
-        port=PORT,
-        #debug=DEBUG
-    )
+    _configure_logging(app)
+    HOST = os.getenv("HOST", "0.0.0.0")
+    PORT = int(os.getenv("PORT", "5000"))
+
+    if _is_debug():
+        app.run(host=HOST, port=PORT, debug=True)
+    else:
+        from waitress import serve
+
+        THREADS             = int(os.getenv("THREADS", "4"))
+        CONNECTION_LIMIT    = int(os.getenv("CONNECTION_LIMIT", "100"))
+        CHANNEL_TIMEOUT     = int(os.getenv("CHANNEL_TIMEOUT", "30"))
+
+        app.logger.info(
+            "Iniciando Waitress em %s:%s (threads=%s, conn_limit=%s, timeout=%s)",
+            HOST, PORT, THREADS, CONNECTION_LIMIT, CHANNEL_TIMEOUT
+        )
+
+        serve(
+            app,
+            host=HOST,
+            port=PORT,
+            threads=THREADS,
+            connection_limit=CONNECTION_LIMIT,
+            channel_timeout=CHANNEL_TIMEOUT,
+            ident="target-vpo"
+        )
