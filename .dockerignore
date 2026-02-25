@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+ 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+ 
+# Ambiente virtual
+venv/
+.env/
+.venv/
+ 
+# IDEs
+.vscode/
+.idea/
+ 
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+ 
+# Sistema
+.DS_Store
+Thumbs.db
+ 
+# Docker
+Dockerfile
+docker-compose.yml
+ 
+# Documentação
+README.md

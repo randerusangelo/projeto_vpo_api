@@ -1,0 +1,12 @@
+services:
+  vpo_api:
+    image: vpo_api:latest
+    container_name: vpo_api
+    ports:
+      - "5020:5000"
+    networks:
+      - web
+ 
+networks:
+  web:
+    external: true
