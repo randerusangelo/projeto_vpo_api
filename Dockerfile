@@ -1,5 +1,7 @@
+FROM python:3.12-slim-bookworm
+
 RUN rm -rf /var/lib/apt/lists/*
- 
+
 # Diretório da aplicação
 WORKDIR /app
 COPY gitclone/ .

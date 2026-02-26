@@ -41,8 +41,6 @@ def create_app():
 
 app = create_app()
 
-
-
 HOST = os.getenv("HOST")
 PORT = os.getenv("PORT")
 
@@ -76,19 +74,24 @@ def buscarroteiro():
         return jsonify({"error": str(e)}), 500
     
 
-#ROTA PARA VER AS TAGS DISPONIVEIS
-@app.get("/tagdisponiveis")
-@cache.cached(timeout=300, query_string=True)
+    
+# ROTA PARA VER AS TAGS DISPONIVEIS (POST)
+@app.post("/tagdisponiveis")
 def tagdisponiveis():
-    placa = request.args.get("placa", "").strip()
+
+    if not request.is_json:
+        return jsonify({"error": "Content-Type deve ser application/json"}), 400
+
+    body = request.get_json()
+    placa = (body.get("placa") or "").strip()
 
     if not placa:
-        return jsonify({"error": "placa obrigatória"}), 400
-    
-    try: 
+        return jsonify({"error": "placa é obrigatória"}), 400
+
+    try:
         resultado = consultar_tags_disponiveis(placa)
         return jsonify(resultado), 200
-    
+
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -97,23 +100,29 @@ def tagdisponiveis():
     
 
 #ROTA PARA OBTER CUSTO     
-@app.get("/custorota")
+@app.post("/custorota")
 @cache.cached(timeout=300, query_string=True)
 def custorota():
-    categoria = request.args.get("categoria")
-    rota = request.args.get("rota")
-    modo = request.args.get("modo")
 
-    if not categoria or not rota or not modo:
+    if not request.is_json:
+        return jsonify({"error": "Content-Type deve ser application/json"}), 400
+
+    body = request.get_json() or {}
+
+    categoria = body.get("categoria")
+    rota = body.get("rota")
+    modo = body.get("modo")
+
+    if categoria is None or rota is None or modo is None:
         return jsonify({
             "error": "parametros obrigatorios: categoria, rota e modo"
         }), 400
-    
+
     try:
         categoria = int(categoria)
         rota = int(rota)
         modo = int(modo)
-    except ValueError:
+    except (ValueError, TypeError):
         return jsonify({"error": "categoria, rota e modo devem ser numéricos"}), 400
 
     try:
@@ -122,9 +131,8 @@ def custorota():
             id_rota_modelo=rota,
             modo_pagamento=modo,
         )
-
         return jsonify(resultado), 200
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
