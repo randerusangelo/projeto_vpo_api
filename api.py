@@ -2,6 +2,8 @@
 import os
 import io
 import base64
+import hashlib
+import json
 import logging
 
 #Configuração de conexão web
@@ -11,13 +13,13 @@ from dotenv import load_dotenv
 from logging.handlers import RotatingFileHandler
 
 #Implementacao dos metodos da api da TargetBank
-from src.services.buscar_roteiro import buscar_roteiro_service
-from src.services.consultar_situacao_veiculo_tag import consultar_tags_disponiveis
-from src.services.obter_custo_rota import obter_custo_rota
-from src.services.comprar_pegadio_avulso import comprar_pedagio_avulso
-from src.services.cancelar_compra_vale_pedagio import cancelar_compra_vale_pedagio
-from src.services.confirmar_pedagio_tag import confirmar_pedagio_tag
-from src.services.emitir_documento import emitir_documento_service as emitir_documento_svc
+from buscar_roteiro import buscar_roteiro_service
+from consultar_situacao_veiculo_tag import consultar_tags_disponiveis
+from obter_custo_rota import obter_custo_rota
+from comprar_pegadio_avulso import comprar_pedagio_avulso
+from cancelar_compra_vale_pedagio import cancelar_compra_vale_pedagio
+from confirmar_pedagio_tag import confirmar_pedagio_tag
+from emitir_documento import emitir_documento_service as emitir_documento_svc
 
 
 load_dotenv()
@@ -28,11 +30,15 @@ cache = Cache()
 
 def create_app():
     app = Flask (__name__)
-    app.config["CACHE_TYPE"] = "RedisCache"
-    app.config["CACHE_REDIS_HOST"] = os.getenv("REDIS_HOST", "localhost")
-    app.config["CACHE_REDIS_PORT"] = int(os.getenv("REDIS_PORT", "6379"))
-    app.config["CACHE_REDIS_DB"]   = int(os.getenv("REDIS_DB", "0"))
-    #app.config["CACHE_REDIS_PASSWORD"] = os.getenv("REDIS_PASSWORD")
+    cache_type = os.getenv("CACHE_TYPE", "SimpleCache")
+    app.config["CACHE_TYPE"] = cache_type
+
+    if cache_type == "RedisCache":
+        app.config["CACHE_REDIS_HOST"] = os.getenv("REDIS_HOST", "localhost")
+        app.config["CACHE_REDIS_PORT"] = int(os.getenv("REDIS_PORT", "6379"))
+        app.config["CACHE_REDIS_DB"] = int(os.getenv("REDIS_DB", "0"))
+        app.config["CACHE_REDIS_PASSWORD"] = os.getenv("REDIS_PASSWORD")
+
     app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 
     cache.init_app(app)
@@ -43,6 +49,12 @@ app = create_app()
 
 HOST = os.getenv("HOST")
 PORT = os.getenv("PORT")
+
+def _custorota_cache_key() -> str:
+    body = request.get_json(silent=True) or {}
+    normalized_body = json.dumps(body, sort_keys=True, separators=(",", ":"))
+    body_digest = hashlib.sha256(normalized_body.encode("utf-8")).hexdigest()
+    return f"{request.path}:{body_digest}"
 
 #ROTA PARA TESTAR O SERVIDOR
 @app.get("/health")
@@ -101,7 +113,7 @@ def tagdisponiveis():
 
 #ROTA PARA OBTER CUSTO     
 @app.post("/custorota")
-@cache.cached(timeout=300, query_string=True)
+@cache.cached(timeout=300, make_cache_key=_custorota_cache_key)
 def custorota():
 
     if not request.is_json:

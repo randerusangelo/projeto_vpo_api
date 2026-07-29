@@ -70,11 +70,14 @@ def calcular_pedagio(
 
 if __name__ == "__main__":
     out = calcular_pedagio(
-        codigo_ibge_origem=3150703, cep_origem="38210000", #pirajuba-mg
+        #codigo_ibge_origem=3150703, cep_origem="38210000", #pirajuba-mg
+        codigo_ibge_origem=3170107, cep_origem="38037530",#uberaba
         #codigo_ibge_destino=3548500, cep_destino="11010020", #santos
+        #codigo_ibge_destino=3117306, cep_destino=" 38120970", #conceicao das alagoas
+        #codigo_ibge_destino=3517700, cep_destino="14580000",# guara
         codigo_ibge_destino=3543402, cep_destino="14077230",#ribeirao preto
         categoria_veiculo=14,
-        nome_rota="TESTE_ROTA_DETALHADA_PY"
+        nome_rota="uberaba_rp"
     )
 
     print(out["total_pedagio"])
